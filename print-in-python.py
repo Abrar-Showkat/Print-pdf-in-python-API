@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import time
+from wsgiref import validate
 import win32print
 import json
 import urllib
@@ -8,6 +9,8 @@ import win32api
 import uuid
 import os
 import subprocess
+import cgi, cgitb
+import base64
 
 
 hostname = 'localhost'
@@ -22,7 +25,7 @@ class MyServer(BaseHTTPRequestHandler):
 
         self.send_header('Access-Control-Allow-Credentials', 'true')
         self.send_header('Access-Control-Allow-Methods',
-                         'GET, OPTIONS, POST')
+                         'GET, OPTIONS, POST,PUT,PATCH')
         self.send_header("Access-Control-Allow-Headers",
                          "*")
         self.send_header("Access-Control-Allow-Headers",
@@ -45,6 +48,8 @@ class MyServer(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin', '*')
 
                 self.send_header("Content-type", "application/json")
+                
+                
                 self.end_headers()
                 self.wfile.write(json.dumps(
                     {'message': 'Printing service is running'}).encode(encoding='utf-8'))
@@ -145,38 +150,33 @@ class MyServer(BaseHTTPRequestHandler):
             print("Specific url not found")
 
     def do_POST(self):
+        
 
         try:
-            if self.path == '/print':
+            self.send_header('Access-Control-Allow-Origin', "*")
+            self.end_headers()
+            if self.path == '/print': 
 
                 content_length = int(self.headers['Content-Length'])
-                file_content = self.rfile.read(content_length)
-                random_string = str(uuid.uuid4().hex)
-                file_name = ''+random_string+'.pdf'
-
-                with open(''+file_name+'', 'wb') as f:
-                    f.write(file_content)
+                
+                content = self.rfile.read(content_length)
+                content_dict=json.loads(content)
+                pdf_data = base64.b64decode(content_dict['printData'],validate=True)
+            
+                with open('my_file.pdf', 'wb') as f:
+                    f.write(pdf_data)
 
                 sumatraPdfPath = "helper.exe"
-
                 try:
-                    win32print.SetDefaultPrinter('Microsoft Print to PDF')
-                    printer = win32print.GetDefaultPrinter()
-
-                    subprocess.run([''+sumatraPdfPath+'', '' +
-                                    file_name+'', '-print-to-default'])
-
+                    subprocess.run(''+sumatraPdfPath+' my_file.pdf -print-to "'+content_dict['printerName']+'" -print-settings "'+content_dict['options']['orientation']+'" "'+content_dict['options']['scale']+'" "monochrome" -silent',shell=True)
                     print("Successfully Printed")
-                    # os.remove(''+file_name+'')
 
                 except:
-
-                    print("Not Printing")
-
-                self.send_response(200)
-                self.end_headers()
+                    self.send_error(500)
+                    print("Not Printing")              
         except:
             self.send_error(500)
+
 
 
 if __name__ == "__main__":
