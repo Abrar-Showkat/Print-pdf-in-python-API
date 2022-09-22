@@ -1,15 +1,12 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import time
 from wsgiref import validate
-import win32print
+from win32 import win32print #This import is for 32-bit version
+#import win32print (This import is for 62-bit version)
 import json
 import urllib
 from urllib.parse import unquote
 import win32api
-import uuid
-import os
 import subprocess
-import cgi, cgitb
 import base64
 
 
