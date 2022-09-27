@@ -164,8 +164,12 @@ class MyServer(BaseHTTPRequestHandler):
                     f.write(pdf_data)
 
                 sumatraPdfPath = "helper.exe"
+
+                printer = content_dict['printerName'] if content_dict['printerName'] is not None else win32print.GetDefaultPrinter()
+                orientation = content_dict['options']['orientation'] if content_dict['options']['orientation'] is not None else 'Potrait'
+                scale = content_dict['options']['scale'] if content_dict['options']['scale'] is not None else 'No Scale'
                 try:
-                    subprocess.run(''+sumatraPdfPath+' my_file.pdf -print-to "'+content_dict['printerName']+'" -print-settings "'+content_dict['options']['orientation']+'" "'+content_dict['options']['scale']+'" "monochrome" -silent',shell=True)
+                    subprocess.run(''+sumatraPdfPath+' my_file.pdf -print-to "'+printer+'" -print-settings "'+orientation+'" "'+scale+'" "monochrome" -silent',shell=True)
                     print("Successfully Printed")
 
                 except:
